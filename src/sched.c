@@ -42,6 +42,22 @@ void init_scheduler(void)
     pthread_mutex_init(&lock, NULL);
 }
 
+void finish_scheduler(void)
+{
+    ready_queue.size = 0;
+    run_queue.size = 0;
+    running_list.size = 0;
+
+#ifdef MLQ_SCHED
+    for (int i = 0; i < MAX_PRIO; i++)
+    {
+        mlq_ready_queue[i].size = 0;
+    }
+#endif
+
+    pthread_mutex_destroy(&lock);
+}
+
 #ifdef MLQ_SCHED
 /*
  *  Stateful design for routine calling
@@ -54,30 +70,31 @@ struct pcb_t *get_mlq_proc(void)
     struct pcb_t *proc = NULL;
     /*TODO: get a process from PRIORITY [ready_queue].
      * Remember to use lock to protect the queue.
-     */
+     * */
+    int curr_prio = 0;
 
     pthread_mutex_lock(&lock);
-    int i = 0; // Ly(14/04/2025)_edit : Remove "static"
-    int check = 0;
-    for (;; i = (i + 1) % MAX_PRIO)
+    int turn = MAX_PRIO;
+
+    while (turn--)
     {
-        if (slot[i] == 0)
+        if (!empty(&mlq_ready_queue[curr_prio]))
         {
-            slot[i] = MAX_PRIO - i;
-            check = 0;
-            continue;
+            proc = dequeue(&mlq_ready_queue[curr_prio]);
+            slot[curr_prio]--;
+
+            if (slot[curr_prio] == 0)
+            {
+                slot[curr_prio] = MAX_PRIO - curr_prio;
+                curr_prio = (curr_prio + 1) % MAX_PRIO;
+            }
+            break;
         }
-        if (empty(&mlq_ready_queue[i]))
+        else
         {
-            check++;
-            if (check == MAX_PRIO)
-                break;
-            continue;
+            slot[curr_prio] = MAX_PRIO - curr_prio;
+            curr_prio = (curr_prio + 1) % MAX_PRIO;
         }
-        check = 0;
-        slot[i]--;
-        proc = dequeue(&mlq_ready_queue[i]);
-        break;
     }
 
     pthread_mutex_unlock(&lock);
@@ -95,7 +112,6 @@ void add_mlq_proc(struct pcb_t *proc)
 {
     pthread_mutex_lock(&lock);
     enqueue(&mlq_ready_queue[proc->prio], proc);
-    // printf("Adding process PID: %d, PRIO: %d\n", proc->pid, proc->prio);
     pthread_mutex_unlock(&lock);
 }
 
@@ -156,7 +172,6 @@ void put_proc(struct pcb_t *proc)
     pthread_mutex_lock(&lock);
     enqueue(&running_list, proc);
     enqueue(&run_queue, proc);
-    printf("Putting process PID: %d, PRIO: %d back to queue\n", proc->pid, proc->prio);
     pthread_mutex_unlock(&lock);
 }
 
