@@ -44,14 +44,14 @@ void init_scheduler(void)
 
 void finish_scheduler(void)
 {
-    ready_queue.size = 0;
-    run_queue.size = 0;
-    running_list.size = 0;
+    clear_queue(&ready_queue);
+    clear_queue(&run_queue);
+    clear_queue(&running_list);
 
 #ifdef MLQ_SCHED
     for (int i = 0; i < MAX_PRIO; i++)
     {
-        mlq_ready_queue[i].size = 0;
+        clear_queue(&mlq_ready_queue[i]);
     }
 #endif
 
