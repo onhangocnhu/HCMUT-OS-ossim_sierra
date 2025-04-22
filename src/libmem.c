@@ -91,7 +91,8 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   /* TODO: commit the vmaid */
   // rgnode.vmaid
-
+  // TODO: 22/4/2025
+  int inc_sz = PAGING_PAGE_ALIGNSZ(size);
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
@@ -106,8 +107,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO retrive current vma if needed, current comment out due to compiler redundant warning*/
   /*Attempt to increate limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
-  // TODO: 16/4/2025
-  int inc_sz = size;
 
   /* TODO retrive old_sbrk if needed, current comment out due to compiler redundant warning*/
   int old_sbrk = cur_vma->sbrk;
@@ -118,7 +117,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   struct sc_regs regs;
   regs.a1 = SYSMEM_INC_OP;
   regs.a2 = vmaid;
-  regs.a3 = inc_sz; // size mở rộng
+  regs.a3 = size;
 
   /* SYSCALL 17 sys_memmap */
   regs.orig_ax = 17;
@@ -133,7 +132,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   /* TODO: commit the limit increment */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
-  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + PAGING_PAGE_ALIGNSZ(size);
+  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + inc_sz;
 
   /* TODO: commit the allocation address */
   *alloc_addr = old_sbrk;
@@ -613,6 +612,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 {
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   struct vm_rg_struct *rgit = cur_vma->vm_freerg_list;
+  struct vm_rg_struct *prev = NULL;
 
   if (rgit == NULL)
   {
@@ -621,6 +621,29 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 
   newrg->rg_start = -1;
   newrg->rg_end = -1;
+
+  // while (rgit != NULL)
+  // {
+  //   unsigned long sizeOfFreeVMReg = rgit->rg_end - rgit->rg_start + 1;
+
+  //   if (sizeOfFreeVMReg >= size)
+  //   {
+  //     newrg->rg_start = rgit->rg_start;
+  //     newrg->rg_end = rgit->rg_start + size - 1;
+
+  //     rgit->rg_start += size;
+
+  //     if (rgit->rg_start > rgit->rg_end)
+  //     {
+  //       struct vm_rg_struct *tmp = rgit;
+  //       rgit = rgit->rg_next;
+  //       free(tmp);
+  //     }
+  //     return 0;
+  //   }
+
+  //   rgit = rgit->rg_next;
+  // }
 
   while (rgit != NULL)
   {
@@ -632,15 +655,21 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
       newrg->rg_end = rgit->rg_start + size - 1;
 
       rgit->rg_start += size;
+
       if (rgit->rg_start > rgit->rg_end)
       {
-        struct vm_rg_struct *tmp = rgit;
-        rgit = rgit->rg_next;
-        free(tmp);
+        if (prev == NULL)
+          cur_vma->vm_freerg_list = rgit->rg_next;
+        else
+          prev->rg_next = rgit->rg_next;
+
+        free(rgit);
       }
+
       return 0;
     }
 
+    prev = rgit;
     rgit = rgit->rg_next;
   }
 
