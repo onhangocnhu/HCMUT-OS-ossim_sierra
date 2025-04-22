@@ -32,7 +32,7 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
     }
     // Add the process to the queue
     // Check to avoid duplicating
-    for (int i = 1; i < q->size; i++)
+    for (int i = 0; i < q->size; i++)
     {
         if (q->proc[i] == proc)
         {
@@ -53,27 +53,17 @@ struct pcb_t *dequeue(struct queue_t *q)
         printf("The queue is null or empty!\n");
         return NULL;
     }
-    // Get the highest priority process (with the smallest value of priority) and its position
-    // hpp stands for highest_priority_process
+    
+    struct pcb_t *pop_proc = q->proc[0];
 
-    int hpp_pos = 0;
-    for (int i = 1; i < q->size; i++)
-    {
-        if (q->proc[i]->priority < q->proc[hpp_pos]->priority)
-        {
-            hpp_pos = i;
-        }
-    }
-    struct pcb_t *hpp = q->proc[hpp_pos];
-
-    // Remove the highest priority process from q
-    for (int i = hpp_pos; i < q->size - 1; i++)
+    // Remove pop_proc from queue
+    for (int i = 0; i < q->size - 1; i++)
     {
         q->proc[i] = q->proc[i + 1];
     }
     q->proc[q->size - 1] = NULL;
     q->size--;
-    return hpp;
+    return pop_proc;
 }
 
 void clear_queue(struct queue_t *q)
