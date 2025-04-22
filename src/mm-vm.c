@@ -103,7 +103,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
   // TODO: 11/04/2025
   struct vm_area_struct *vma = caller->mm->mmap;
 
-  while (!vma)
+  while (vma)
   {
     if ((vma->vm_id != vmaid) && (vma->vm_start != vma->vm_end))
     {
