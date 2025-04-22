@@ -67,7 +67,6 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
     return 0;
   }
   /* TODO retrive current vma to obtain newrg, current comment out due to compiler redundant warning*/
-  // TODO: 11/04/2025
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if (!cur_vma)
@@ -77,13 +76,8 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
   }
 
   /* TODO: update the newrg boundary */
-  // TODO: 11/04/2025
   newrg->rg_start = cur_vma->sbrk;
-  // newrg->rg_end = newrg->rg_start + size;
-  // TODO: 16/4/2025
   newrg->rg_end = newrg->rg_start + alignedsz;
-  // printf("=== get_vm_area_node_at_brk ===\n");
-  // printf("sbrk = %ld (0x%08lX), alignedsz = %d\n", cur_vma->sbrk, cur_vma->sbrk, alignedsz);
 
   return newrg;
 }
@@ -100,7 +94,6 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
   pthread_mutex_lock(&mem_lock);
 
   /* TODO validate the planned memory area is not overlapped */
-  // TODO: 11/04/2025
   struct vm_area_struct *vma = caller->mm->mmap;
 
   while (vma)
@@ -148,11 +141,6 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   }
 
   /* TODO: Obtain the new vm area based on vmaid */
-  // TODO: 11/4/2025
-  // cur_vma->vm_end += inc_sz;
-  // cur_vma->sbrk += inc_sz;
-
-  // TODO: 16/04/2025
   if (cur_vma != NULL && area != NULL)
   {
     cur_vma->sbrk = area->rg_end;
@@ -166,9 +154,6 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
   if (vm_map_ram(caller, area->rg_start, area->rg_end, old_end, incnumpage, newrg) < 0)
   {
-    // printf("[vm_map_ram] Mapping region: %08lX -> %08lX (size %ld)\n",
-    //        area->rg_start, area->rg_end, area->rg_end - area->rg_start);
-
     return -1; /* Map the memory to MEMRAM */
   }
 
