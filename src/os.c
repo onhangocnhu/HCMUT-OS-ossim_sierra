@@ -59,6 +59,7 @@ static void *cpu_routine(void *args)
     int remaining_slot = 0;
 #endif
     struct pcb_t *proc = NULL;
+    // Chức năng các hàm update_slot, get_slot, reset_slot được giải thích trong sched.h
     while (1)
     {
         /* Check the status of current process */
@@ -73,7 +74,7 @@ static void *cpu_routine(void *args)
                 continue; /* First load failed. skip dummy load */
             }
             else
-                remaining_slot = get_slot(proc->prio);
+                remaining_slot = get_slot(proc->prio); // gán số slot còn lại của hàng đợi mức độ ưu tiên của proc nếu lấy được proc
         }
         else if (proc->pc == proc->code->size)
         {
@@ -81,7 +82,7 @@ static void *cpu_routine(void *args)
             printf("\tCPU %d: Processed %2d has finished\n",
                    id, proc->pid);
 #ifdef MLQ_SCHED
-            update_slot(proc->prio, use_time);
+            update_slot(proc->prio, use_time); // // Cập nhật số slot đã dùng
 #endif
             free(proc);
 
@@ -91,7 +92,7 @@ static void *cpu_routine(void *args)
 #ifdef MLQ_SCHED
             use_time = 0;
             if (proc)
-                remaining_slot = get_slot(proc->prio);
+                remaining_slot = get_slot(proc->prio); // Gán lại số slot còn lại nếu get được tiến trình mới
 #endif
         }
         else if (time_left == 0)
@@ -101,13 +102,13 @@ static void *cpu_routine(void *args)
                    id, proc->pid);
             put_proc(proc);
 #ifdef MLQ_SCHED
-            update_slot(proc->prio, use_time);
+            update_slot(proc->prio, use_time); // Cập nhật số slot đã dùng
 #endif
             proc = get_proc();
 
 #ifdef MLQ_SCHED
             if (proc)
-                remaining_slot = get_slot(proc->prio);
+                remaining_slot = get_slot(proc->prio); // Gán lại số slot còn lại nếu get được tiến trình mới
 #endif
         }
 
@@ -131,6 +132,8 @@ static void *cpu_routine(void *args)
                    id, proc->pid);
             time_left = time_slot;
 #ifdef MLQ_SCHED
+            // Nếu remaining_slot < time_slot thì CPU chỉ cấp đủ remaining_slot thôi
+            // Giới hạn thời gian chạy để phòng hờ nó không vượt quá số slot mà hàng đợi ưu tiên đó còn
             time_left = (time_slot < remaining_slot) ? time_slot : remaining_slot;
             use_time = 0;
 #endif
