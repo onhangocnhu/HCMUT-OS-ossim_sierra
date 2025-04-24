@@ -88,8 +88,6 @@ int vmap_page_range(struct pcb_t *caller,           // process call
                     struct framephy_struct *frames, // list of the mapped frames
                     struct vm_rg_struct *ret_rg)    // return mapped region, the real mapped fp
 {                                                   // no guarantee all given pages are mapped
-  // struct framephy_struct *fpit;
-  // TODO: 11/04/2025
   struct framephy_struct *fpit = malloc(sizeof(struct framephy_struct));
   int pgit = 0;
   int pgn = PAGING_PGN(addr);
@@ -134,7 +132,6 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
   for (pgit = 0; pgit < req_pgnum; pgit++)
   {
     /* TODO: allocate the page */
-    // TODO: 11/04/2025
     if (MEMPHY_get_freefp(caller->mram, &fpn) == 0)
     {
       newfp_str = (struct framephy_struct *)malloc(sizeof(struct framephy_struct));
@@ -170,7 +167,6 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
         *frm_lst = newfp_str;
       }
 
-      // TODO: 11/04/2025 Tiến hành swap
       int i = 0;
       if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == 0)
       {
@@ -287,12 +283,10 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
   struct vm_rg_struct *first_rg = init_vm_rg(vma0->vm_start, vma0->vm_end);
   enlist_vm_rg_node(&vma0->vm_freerg_list, first_rg);
   /* TODO update VMA0 next */
-  // TODO: 11/04/2025
   vma0->vm_next = NULL;
   /* Point vma owner backward */
   vma0->vm_mm = mm;
   /* TODO: update mmap */
-  // TODO: 11/04/2025
   mm->mmap = vma0;
 
   return 0;
