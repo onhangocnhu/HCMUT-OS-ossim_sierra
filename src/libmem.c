@@ -632,9 +632,11 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
     return -1;
   }
 
+  /* Probe unintialized newrg */
   newrg->rg_start = -1;
   newrg->rg_end = -1;
 
+  /* TODO Traverse on list of free vm region to find a fit space */
   while (rgit != NULL)
   {
     unsigned long sizeOfFreeVMReg = rgit->rg_end - rgit->rg_start + 1;
