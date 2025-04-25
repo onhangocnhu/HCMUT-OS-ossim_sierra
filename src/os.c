@@ -13,9 +13,6 @@ static int time_slot;
 static int num_cpus;
 static int done = 0;
 
-// static int enable_fixed_memsz = 0;
-// static int enable_vmdbg_mmdbg = 0;
-
 #ifdef MM_PAGING
 static int memramsz;
 static int memswpsz[PAGING_MAX_MMSWP];
