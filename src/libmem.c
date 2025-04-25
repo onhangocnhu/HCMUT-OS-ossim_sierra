@@ -151,15 +151,15 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   /* TODO: commit the limit increment */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
-  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + inc_sz;
+  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size; // inc_sz?
 
   /* TODO: commit the allocation address */
   *alloc_addr = old_sbrk;
 
-  if (old_sbrk + inc_sz < cur_vma->vm_end)
+  if (old_sbrk + size < cur_vma->vm_end) // inc_sz?
   {
     struct vm_rg_struct *rgnode = malloc(sizeof(struct vm_rg_struct));
-    rgnode->rg_start = old_sbrk + inc_sz;
+    rgnode->rg_start = old_sbrk + size; // inc_sz?
     rgnode->rg_end = cur_vma->vm_end;
 
     enlist_vm_freerg_list(caller->mm, rgnode);
@@ -205,7 +205,6 @@ int liballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
   int val = __alloc(proc, 0, reg_index, size, &addr);
 #ifdef IODUMP
   printf("===== PHYSICAL MEMORY AFTER ALLOCATION =====\n");
-  // printf("PID=%d - Region=%d - Address=%08ld - Size=%d byte\n", proc->pid, reg_index, addr * sizeof(uint32_t), size);
   printf("PID=%d - Region=%d - Address=%08X - Size=%d byte\n", proc->pid, reg_index, addr, size);
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); // print max TBL
@@ -300,15 +299,8 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     regs.a1 = SYSMEM_SWP_OP;
     regs.a2 = vicfpn;
     regs.a3 = swpfpn;
-    regs.orig_ax = 17;
-
     /* SYSCALL 17 sys_memmap */
-
-    /* TODO copy target frame form swap to mem
-     * SWP(tgtfpn <--> vicfpn)
-     * SYSCALL 17 sys_memmap
-     * with operation SYSMEM_SWP_OP
-     */
+    regs.orig_ax = 17;
 
     if (syscall(caller, regs.orig_ax, &regs) != 0)
     {
@@ -318,9 +310,14 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     regs.flags = 0; // successful
 
+    /* TODO copy target frame form swap to mem
+     * SWP(tgtfpn <--> vicfpn)
+     * SYSCALL 17 sys_memmap
+     * with operation SYSMEM_SWP_OP
+     */
+
     // Swap in: lấy dữ liệu từ swap (target page) vào frame RAM vừa giải phóng
     /* TODO copy target frame form swap to mem */
-
     regs.a2 = tgtfpn; // đang ở swap
     regs.a3 = vicfpn; // nơi cần đưa vào RAM
 
@@ -527,6 +524,7 @@ int libwrite(
     uint32_t destination, // Index of destination register
     uint32_t offset)
 {
+  int result = __write(proc, 0, destination, offset, data);
 #ifdef IODUMP
   printf("================================================================\n");
   printf("===== PHYSICAL MEMORY AFTER WRITING =====\n");
@@ -545,11 +543,7 @@ int libwrite(
   }
   printf("================================================================\n");
 #endif
-  // Ghi dữ liệu vào bộ nhớ
-  int result = __write(proc, 0, destination, offset, data);
-
 #ifdef IODUMP
-  // Gọi MEMPHY_dump sau khi ghi
   MEMPHY_dump(proc->mram);
 #endif
 
