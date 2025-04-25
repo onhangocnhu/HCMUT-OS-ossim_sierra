@@ -6,8 +6,8 @@
 
 #define MM_PAGING
 #define MM_FIXED_MEMSZ
-#define VMDBG 1
-#define MMDBG 1
+// #define VMDBG 1
+// #define MMDBG 1
 #define IODUMP 1       // Print I/O Dump
 #define PAGETBL_DUMP 1 // Print Page Table Dump
 #define TIME_SLOT 1    // Print Time Slot

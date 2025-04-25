@@ -30,34 +30,52 @@ static pthread_mutex_t mmvm_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct *rg_elmt)
 {
-  struct vm_rg_struct **prev = &mm->mmap->vm_freerg_list;
-  struct vm_rg_struct *cur = mm->mmap->vm_freerg_list;
+  struct vm_rg_struct *rg_node = mm->mmap->vm_freerg_list;
 
-  while (cur && cur->rg_start < rg_elmt->rg_start)
-  {
-    prev = &cur->rg_next;
-    cur = cur->rg_next;
-  }
+  if (rg_elmt->rg_start >= rg_elmt->rg_end)
+    return -1;
 
-  rg_elmt->rg_next = cur;
-  *prev = rg_elmt;
+  if (rg_node != NULL)
+    rg_elmt->rg_next = rg_node;
 
-  if (cur && rg_elmt->rg_end == cur->rg_start)
-  {
-    rg_elmt->rg_end = cur->rg_end;
-    rg_elmt->rg_next = cur->rg_next;
-    free(cur);
-  }
-
-  if (*prev != rg_elmt && (*prev)->rg_end == rg_elmt->rg_start)
-  {
-    (*prev)->rg_end = rg_elmt->rg_end;
-    (*prev)->rg_next = rg_elmt->rg_next;
-    free(rg_elmt);
-  }
+  /* Enlist the new region */
+  mm->mmap->vm_freerg_list = rg_elmt;
 
   return 0;
 }
+// int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct *rg_elmt)
+// {
+//   if (rg_elmt->rg_start >= rg_elmt->rg_end)
+//     return -1;
+
+//   struct vm_rg_struct **prev = &mm->mmap->vm_freerg_list;
+//   struct vm_rg_struct *cur = mm->mmap->vm_freerg_list;
+
+//   while (cur && cur->rg_start < rg_elmt->rg_start)
+//   {
+//     prev = &cur->rg_next;
+//     cur = cur->rg_next;
+//   }
+
+//   rg_elmt->rg_next = cur;
+//   *prev = rg_elmt;
+
+//   if (cur && rg_elmt->rg_end == cur->rg_start)
+//   {
+//     rg_elmt->rg_end = cur->rg_end;
+//     rg_elmt->rg_next = cur->rg_next;
+//     free(cur);
+//   }
+
+//   if (*prev != rg_elmt && (*prev)->rg_end == rg_elmt->rg_start)
+//   {
+//     (*prev)->rg_end = rg_elmt->rg_end;
+//     (*prev)->rg_next = rg_elmt->rg_next;
+//     free(rg_elmt);
+//   }
+
+//   return 0;
+// }
 
 /*get_symrg_byid - get mem region by region ID
  *@mm: memory region
@@ -93,7 +111,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   // rgnode.vmaid
   // TODO: 22/4/2025
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
-  /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
+  /* TODO get_free_vmrg_area SUCCEEDED */
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
@@ -104,6 +122,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     return 0;
   }
 
+  /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
   /* TODO retrive current vma if needed, current comment out due to compiler redundant warning*/
   /*Attempt to increate limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
@@ -137,10 +156,10 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO: commit the allocation address */
   *alloc_addr = old_sbrk;
 
-  if (old_sbrk + size < cur_vma->vm_end)
+  if (old_sbrk + inc_sz < cur_vma->vm_end)
   {
     struct vm_rg_struct *rgnode = malloc(sizeof(struct vm_rg_struct));
-    rgnode->rg_start = old_sbrk + size;
+    rgnode->rg_start = old_sbrk + inc_sz;
     rgnode->rg_end = cur_vma->vm_end;
 
     enlist_vm_freerg_list(caller->mm, rgnode);
@@ -621,29 +640,6 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 
   newrg->rg_start = -1;
   newrg->rg_end = -1;
-
-  // while (rgit != NULL)
-  // {
-  //   unsigned long sizeOfFreeVMReg = rgit->rg_end - rgit->rg_start + 1;
-
-  //   if (sizeOfFreeVMReg >= size)
-  //   {
-  //     newrg->rg_start = rgit->rg_start;
-  //     newrg->rg_end = rgit->rg_start + size - 1;
-
-  //     rgit->rg_start += size;
-
-  //     if (rgit->rg_start > rgit->rg_end)
-  //     {
-  //       struct vm_rg_struct *tmp = rgit;
-  //       rgit = rgit->rg_next;
-  //       free(tmp);
-  //     }
-  //     return 0;
-  //   }
-
-  //   rgit = rgit->rg_next;
-  // }
 
   while (rgit != NULL)
   {
