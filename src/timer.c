@@ -67,8 +67,6 @@ static void *timer_routine(void *args)
 			pthread_mutex_unlock(&temp->id.timer_lock);
 		}
 		
-		
-		
 	}
 	pthread_exit(args);
 }
