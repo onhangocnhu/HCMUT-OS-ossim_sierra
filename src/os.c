@@ -13,8 +13,8 @@ static int time_slot;
 static int num_cpus;
 static int done = 0;
 
-static int enable_fixed_memsz = 0;
-static int enable_vmdbg_mmdbg = 0;
+// static int enable_fixed_memsz = 0;
+// static int enable_vmdbg_mmdbg = 0;
 
 #ifdef MM_PAGING
 static int memramsz;
@@ -206,12 +206,15 @@ static void read_config(const char *path)
 
     fscanf(file, "%d %d %d\n", &time_slot, &num_cpus, &num_processes);
     ld_processes.path = (char **)malloc(sizeof(char *) * num_processes);
-    ld_processes.start_time = (unsigned long *)
-        malloc(sizeof(unsigned long) * num_processes);
+    ld_processes.start_time = (unsigned long *)malloc(sizeof(unsigned long) * num_processes);
+
 #ifdef MM_PAGING
     int sit;
+    /* Check second line of each input if it contains `RAM_SZ` `SWP_SZ_0` `SWP_SZ_1` `SWP_SZ_2` `SWP_SZ_3` */
+    int sz_config[5];
+    int count_sz = fscanf(file, "%d %d %d %d %d\n", &sz_config[0], &sz_config[1], &sz_config[2], &sz_config[3], &sz_config[4]);
 
-    if (enable_fixed_memsz)
+    if (count_sz != 5)
     {
         /* We provide here a back compatible with legacy OS simulatiom config file
          * In which, it have no addition config line for Mema, keep only one line
@@ -224,7 +227,7 @@ static void read_config(const char *path)
             memswpsz[sit] = 0;
     }
 
-    else if (enable_vmdbg_mmdbg)
+    else
     {
         /* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
          * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
@@ -265,16 +268,6 @@ int main(int argc, char *argv[])
     {
         printf("Usage: os [path to configure file]\n");
         return 1;
-    }
-
-    if (strcmp(argv[1], "sched") == 0 || strcmp(argv[1], "sched_0") == 0 || strcmp(argv[1], "sched_1") == 0 || strcmp(argv[1], "os_1_singleCPU_mlq") == 0)
-    {
-        enable_fixed_memsz = 1;
-    }
-
-    else
-    {
-        enable_vmdbg_mmdbg = 1;
     }
 
     char path[100];
