@@ -5,7 +5,7 @@
 #define MAX_PRIO 140
 
 #define MM_PAGING
-#define MM_FIXED_MEMSZ // ./os sched, ./os sched_0, ./os sched_1, ./os os_1_singleCPU_mlq
+#define MM_FIXED_MEMSZ
 #define VMDBG 1
 #define MMDBG 1
 #define IODUMP 1       // Print I/O Dump
