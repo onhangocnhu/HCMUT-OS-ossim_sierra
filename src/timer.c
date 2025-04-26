@@ -65,7 +65,10 @@ static void *timer_routine(void *args)
 			temp->id.done = 0;
 			pthread_cond_signal(&temp->id.timer_cond);
 			pthread_mutex_unlock(&temp->id.timer_lock);
-		}	
+		}
+		
+		
+		
 	}
 	pthread_exit(args);
 }

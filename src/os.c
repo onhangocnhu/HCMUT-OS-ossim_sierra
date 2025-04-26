@@ -202,43 +202,52 @@ static void read_config(const char *path)
     }
 
     fscanf(file, "%d %d %d\n", &time_slot, &num_cpus, &num_processes);
+
     ld_processes.path = (char **)malloc(sizeof(char *) * num_processes);
     ld_processes.start_time = (unsigned long *)malloc(sizeof(unsigned long) * num_processes);
 
 #ifdef MM_PAGING
     int sit;
     /* Check second line of each input if it contains `RAM_SZ` `SWP_SZ_0` `SWP_SZ_1` `SWP_SZ_2` `SWP_SZ_3` */
-    int sz_config[5];
-    int count_sz = fscanf(file, "%d %d %d %d %d", &sz_config[0], &sz_config[1], &sz_config[2], &sz_config[3], &sz_config[4]);
+    long pos = ftell(file);
+    char buffer[256];
 
-    if (count_sz == 5)
+    if (fgets(buffer, sizeof(buffer), file))
     {
-        /* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
-         * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
-         *        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
-         */
-        memramsz = sz_config[0];
-        for (sit = 0; sit < PAGING_MAX_MMSWP; sit++)
+        int sz_config[5];
+        int count_sz = sscanf(buffer, "%d %d %d %d %d", &sz_config[0], &sz_config[1], &sz_config[2], &sz_config[3], &sz_config[4]);
+
+        // printf("sz_config: %d %d %d %d %d\n", sz_config[0], sz_config[1], sz_config[2], sz_config[3], sz_config[4]);
+
+        if (count_sz == 5)
         {
-            memswpsz[sit] = sz_config[sit + 1];
+            /* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
+             * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
+             *        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
+             */
+            memramsz = sz_config[0];
+            for (sit = 0; sit < PAGING_MAX_MMSWP; sit++)
+            {
+                memswpsz[sit] = sz_config[sit + 1];
+            }
+
+            fscanf(file, "\n"); /* Final character */
         }
 
-        fscanf(file, "\n"); /* Final character */
+        else
+        {
+            /* We provide here a back compatible with legacy OS simulatiom config file
+             * In which, it have no addition config line for Mema, keep only one line
+             * for legacy info
+             *  [time slice] [N = Number of CPU] [M = Number of Processes to be run]
+             */
+            memramsz = 0x100000;
+            memswpsz[0] = 0x1000000;
+            for (sit = 1; sit < PAGING_MAX_MMSWP; sit++)
+                memswpsz[sit] = 0;
+            fseek(file, pos, SEEK_SET);
+        }
     }
-
-    else
-    {
-        /* We provide here a back compatible with legacy OS simulatiom config file
-         * In which, it have no addition config line for Mema, keep only one line
-         * for legacy info
-         *  [time slice] [N = Number of CPU] [M = Number of Processes to be run]
-         */
-        memramsz = 0x100000;
-        memswpsz[0] = 0x1000000;
-        for (sit = 1; sit < PAGING_MAX_MMSWP; sit++)
-            memswpsz[sit] = 0;
-    }
-
 #endif
 
 #ifdef MLQ_SCHED

@@ -43,39 +43,6 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct *rg_elmt)
 
   return 0;
 }
-// int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct *rg_elmt)
-// {
-//   if (rg_elmt->rg_start >= rg_elmt->rg_end)
-//     return -1;
-
-//   struct vm_rg_struct **prev = &mm->mmap->vm_freerg_list;
-//   struct vm_rg_struct *cur = mm->mmap->vm_freerg_list;
-
-//   while (cur && cur->rg_start < rg_elmt->rg_start)
-//   {
-//     prev = &cur->rg_next;
-//     cur = cur->rg_next;
-//   }
-
-//   rg_elmt->rg_next = cur;
-//   *prev = rg_elmt;
-
-//   if (cur && rg_elmt->rg_end == cur->rg_start)
-//   {
-//     rg_elmt->rg_end = cur->rg_end;
-//     rg_elmt->rg_next = cur->rg_next;
-//     free(cur);
-//   }
-
-//   if (*prev != rg_elmt && (*prev)->rg_end == rg_elmt->rg_start)
-//   {
-//     (*prev)->rg_end = rg_elmt->rg_end;
-//     (*prev)->rg_next = rg_elmt->rg_next;
-//     free(rg_elmt);
-//   }
-
-//   return 0;
-// }
 
 /*get_symrg_byid - get mem region by region ID
  *@mm: memory region
@@ -107,10 +74,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /*Allocate at the toproof */
   struct vm_rg_struct rgnode;
 
-  /* TODO: commit the vmaid */
-  // rgnode.vmaid
-  // TODO: 22/4/2025
-  int inc_sz = PAGING_PAGE_ALIGNSZ(size);
   /* TODO get_free_vmrg_area SUCCEEDED */
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
@@ -126,6 +89,12 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO retrive current vma if needed, current comment out due to compiler redundant warning*/
   /*Attempt to increate limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
+
+  if (!cur_vma)
+  {
+    pthread_mutex_unlock(&mmvm_lock);
+    return -1;
+  }
 
   /* TODO retrive old_sbrk if needed, current comment out due to compiler redundant warning*/
   int old_sbrk = cur_vma->sbrk;
@@ -151,15 +120,15 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   /* TODO: commit the limit increment */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
-  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size; // inc_sz?
+  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
   /* TODO: commit the allocation address */
   *alloc_addr = old_sbrk;
 
-  if (old_sbrk + size < cur_vma->vm_end) // inc_sz?
+  if (old_sbrk + size < cur_vma->vm_end)
   {
     struct vm_rg_struct *rgnode = malloc(sizeof(struct vm_rg_struct));
-    rgnode->rg_start = old_sbrk + size; // inc_sz?
+    rgnode->rg_start = old_sbrk + size;
     rgnode->rg_end = cur_vma->vm_end;
 
     enlist_vm_freerg_list(caller->mm, rgnode);
