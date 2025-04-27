@@ -430,4 +430,22 @@ int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
   return 0;
 }
 
+void print_mem_status(struct pcb_t *caller, struct vm_area_struct *ivma)
+{
+  printf("================================================================\n");
+  printf("===== Memory Status =====\n");
+
+  printf("===== LIST OF FREE REGION =====\n");
+  print_list_rg(ivma->vm_freerg_list);
+  printf("================================================================\n");
+  printf("===== LIST OF VIRTUAL MEMORY AREA =====\n");
+  print_list_vma(ivma);
+  printf("================================================================\n");
+  printf("===== LIST OF FIFO PAGE NUMBER =====\n");
+  print_list_pgn(ivma->vm_mm->fifo_pgn);
+  printf("================================================================\n");
+  printf("\n===== End of Memory Status =====\n");
+  printf("================================================================\n");
+}
+
 // #endif

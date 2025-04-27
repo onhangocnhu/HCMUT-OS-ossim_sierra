@@ -70,8 +70,10 @@ static void *cpu_routine(void *args)
                 next_slot(timer_id);
                 continue; /* First load failed. skip dummy load */
             }
+#ifdef MLQ_SCHED
             else
                 remaining_slot = get_slot(proc->prio); // gán số slot còn lại của hàng đợi mức độ ưu tiên của proc nếu lấy được proc
+#endif
         }
         else if (proc->pc == proc->code->size)
         {
@@ -178,8 +180,13 @@ static void *ld_routine(void *args)
         proc->mswp = mswp;
         proc->active_mswp = active_mswp;
 #endif
+#ifdef MLQ_SCHED
         printf("\tLoaded a process at %s, PID: %d PRIO: %ld\n",
                ld_processes.path[i], proc->pid, ld_processes.prio[i]);
+#else
+        printf("\tLoaded a process at %s, PID: %d\n",
+               ld_processes.path[i], proc->pid);
+#endif
         add_proc(proc);
         free(ld_processes.path[i]);
         i++;

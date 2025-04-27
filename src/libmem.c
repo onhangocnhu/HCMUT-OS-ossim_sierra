@@ -172,13 +172,25 @@ int liballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
   int addr;
   int val = __alloc(proc, 0, reg_index, size, &addr);
+
 #ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "ALLOC");
+  printf("================================================================\n");
+#endif
+
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+
+#ifdef MMDBG
   printf("===== PHYSICAL MEMORY AFTER ALLOCATION =====\n");
   printf("PID=%d - Region=%d - Address=%08X - Size=%d byte\n", proc->pid, reg_index, addr, size);
 #ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
-  // MEMPHY_dump(proc->mram);
   for (int i = 0; i < PAGING_MAX_PGN; i++)
   {
     uint32_t pte = proc->mm->pgd[i];
@@ -188,6 +200,10 @@ int liballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
       printf("Page Number: %d -> Frame Number: %d\n", i, fpn);
     }
   }
+  printf("================================================================\n");
+#endif
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "ALLOC");
   printf("================================================================\n");
 #endif
   return val;
@@ -202,12 +218,22 @@ int libfree(struct pcb_t *proc, uint32_t reg_index)
 {
   int val = __free(proc, 0, reg_index);
 #ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "FREE");
+  printf("================================================================\n");
+#endif
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+
+#ifdef MMDBG
   printf("===== PHYSICAL MEMORY AFTER DEALLOCATION =====\n");
   printf("PID=%d - Region=%d\n", proc->pid, reg_index);
 #ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
   print_pgtbl(proc, 0, -1);
 #endif
-  // MEMPHY_dump(proc->mram);
   for (int i = 0; i < PAGING_MAX_PGN; i++)
   {
     uint32_t pte = proc->mm->pgd[i];
@@ -217,6 +243,10 @@ int libfree(struct pcb_t *proc, uint32_t reg_index)
       printf("Page Number: %d -> Frame Number: %d\n", i, fpn);
     }
   }
+  printf("================================================================\n");
+#endif
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "FREE");
   printf("================================================================\n");
 #endif
   return val;
@@ -440,11 +470,24 @@ int libread(
   BYTE data;
   int val = __read(proc, 0, source, offset, &data);
   *destination = (uint32_t)data;
+
 #ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "READ");
+  printf("================================================================\n");
+#endif
+
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+
+#ifdef MMDBG
   printf("================================================================\n");
   printf("===== PHYSICAL MEMORY AFTER READING =====\n");
   printf("read region=%d offset=%d value=%d\n", source, offset, data);
 #ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
   for (int i = 0; i < PAGING_MAX_PGN; i++)
@@ -459,7 +502,10 @@ int libread(
   printf("================================================================\n");
   MEMPHY_dump(proc->mram);
 #endif
-
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "READ");
+  printf("================================================================\n");
+#endif
   return val;
 }
 
@@ -494,11 +540,22 @@ int libwrite(
     uint32_t offset)
 {
   int result = __write(proc, 0, destination, offset, data);
+
 #ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "WRITE");
+  printf("================================================================\n");
+#endif
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+#ifdef MMDBG
   printf("================================================================\n");
   printf("===== PHYSICAL MEMORY AFTER WRITING =====\n");
   printf("write region=%d offset=%d value=%d\n", destination, offset, data);
 #ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
   for (int i = 0; i < PAGING_MAX_PGN; i++)
@@ -511,11 +568,12 @@ int libwrite(
     }
   }
   printf("================================================================\n");
-#endif
-#ifdef IODUMP
   MEMPHY_dump(proc->mram);
 #endif
-
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "WRITE");
+  printf("================================================================\n");
+#endif
   return result;
 }
 
