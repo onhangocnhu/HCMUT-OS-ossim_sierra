@@ -56,25 +56,31 @@ static void *cpu_routine(void *args)
     int remaining_slot = 0;
 #endif
     struct pcb_t *proc = NULL;
+    // int count = 0;
     // Chức năng các hàm update_slot, get_slot, reset_slot được giải thích trong sched.h
     while (1)
     {
         /* Check the status of current process */
+
         if (proc == NULL)
         {
-            /* No process is running, the we load new process from
-             * ready queue */
             proc = get_proc();
             if (proc == NULL)
             {
+                if (done)
+                {
+                    printf("\tCPU %d stopped\n", id);
+                    break;
+                }
                 next_slot(timer_id);
-                continue; /* First load failed. skip dummy load */
+                continue;
             }
 #ifdef MLQ_SCHED
             else
-                remaining_slot = get_slot(proc->prio); // gán số slot còn lại của hàng đợi mức độ ưu tiên của proc nếu lấy được proc
+                remaining_slot = get_slot(proc->prio);
 #endif
         }
+
         else if (proc->pc == proc->code->size)
         {
             /* The porcess has finish it job */
@@ -209,7 +215,10 @@ static void read_config(const char *path)
     }
 
     fscanf(file, "%d %d %d\n", &time_slot, &num_cpus, &num_processes);
-
+    // if (num_cpus > num_processes)
+    // {
+    //     num_cpus = num_processes;
+    // }
     ld_processes.path = (char **)malloc(sizeof(char *) * num_processes);
     ld_processes.start_time = (unsigned long *)malloc(sizeof(unsigned long) * num_processes);
 

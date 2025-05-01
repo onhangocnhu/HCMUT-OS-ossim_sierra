@@ -21,8 +21,10 @@ int queue_empty(void)
     for (prio = 0; prio < MAX_PRIO; prio++)
         if (!empty(&mlq_ready_queue[prio]))
             return 0;
-#endif
+    return 1;
+#else
     return (empty(&ready_queue) && empty(&run_queue));
+#endif
 }
 
 void init_scheduler(void)
